@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ZYN — DSL Compiler Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:        #0a0a0b;
+  --bg2:       #111113;
+  --bg3:       #18181c;
+  --bg4:       #1f1f25;
+  --border:    rgba(255,255,255,0.07);
+  --border2:   rgba(255,255,255,0.12);
+  --text:      #f0efe8;
+  --text2:     #8b8a85;
+  --text3:     #4a4a50;
+  --accent:    #d4f064;
+  --accent2:   #a8c43e;
+  --accent-bg: rgba(212,240,100,0.06);
+  --red:       #ff5f5f;
+  --red-bg:    rgba(255,95,95,0.08);
+  --blue:      #7eb8f7;
+  --blue-bg:   rgba(126,184,247,0.08);
+  --amber:     #f0b429;
+  --amber-bg:  rgba(240,180,41,0.08);
+  --teal:      #5ee7b8;
+  --mono:      'DM Mono', monospace;
+  --sans:      'DM Sans', sans-serif;
+  --display:   'Syne', sans-serif;
+  --radius:    10px;
+  --radius-lg: 16px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  overflow: hidden;
+}
+
+/* ── GRID SHELL ── */
+.shell {
+  display: grid;
+  grid-template-rows: 52px 1fr;
+  grid-template-columns: 260px 1fr 1fr;
+  height: 100vh;
+  gap: 0;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  position: relative;
+  z-index: 10;
+}
+
+.logo {
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.logo-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.4; transform: scale(0.7); }
+}
+
+.logo-sub {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--text3);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-left: 2px;
+}
+
+.topbar-center {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.phase-pip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 0.06em;
+  transition: all 0.3s;
+}
+.phase-pip .pip-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--text3);
+  transition: all 0.3s;
+}
+.phase-pip.done {
+  border-color: rgba(212,240,100,0.25);
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+.phase-pip.done .pip-dot { background: var(--accent); }
+.phase-pip.error {
+  border-color: rgba(255,95,95,0.25);
+  color: var(--red);
+  background: var(--red-bg);
+}
+.phase-pip.error .pip-dot { background: var(--red); }
+
+.compile-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  background: var(--accent);
+  color: #0a0a0b;
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.compile-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: white;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.compile-btn:hover::after { opacity: 0.1; }
+.compile-btn:active { transform: scale(0.97); }
+.compile-btn.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+.btn-icon { font-size: 12px; }
+
+/* ── LEFT SIDEBAR ── */
+.sidebar {
+  grid-row: 2;
+  grid-column: 1;
+  border-right: 1px solid var(--border);
+  background: var(--bg2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-header {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text3);
+}
+
+.examples-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+.examples-list::-webkit-scrollbar { width: 4px; }
+.examples-list::-webkit-scrollbar-track { background: transparent; }
+.examples-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.example-item {
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-bottom: 2px;
+}
+.example-item:hover { background: var(--bg3); }
+.example-item.active { background: var(--bg4); border: 1px solid var(--border2); }
+.example-name {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+.example-desc {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text3);
+}
+.example-tag {
+  display: inline-block;
+  margin-top: 5px;
+  padding: 2px 7px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+}
+.example-tag.err-tag {
+  background: var(--red-bg);
+  color: var(--red);
+}
+
+.sidebar-stats {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+}
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.stat-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 0.06em;
+}
+.stat-value {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text);
+}
+.stat-value.accent { color: var(--accent); }
+.stat-value.red    { color: var(--red); }
+
+/* ── EDITOR PANE ── */
+.editor-pane {
+  grid-row: 2;
+  grid-column: 2;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  position: relative;
+}
+
+.pane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  height: 38px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+  flex-shrink: 0;
+}
+.pane-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text2);
+  letter-spacing: 0.06em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pane-title .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--amber);
+}
+.pane-badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.badge-lang { background: var(--blue-bg); color: var(--blue); }
+
+.editor-wrap {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+}
+
+.line-nums {
+  padding: 16px 0;
+  min-width: 44px;
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text3);
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+  user-select: none;
+  padding-right: 12px;
+  padding-left: 8px;
+  flex-shrink: 0;
+}
+
+#editor {
+  flex: 1;
+  resize: none;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.7;
+  padding: 16px;
+  tab-size: 4;
+  white-space: pre;
+  overflow: auto;
+  caret-color: var(--accent);
+  spellcheck: false;
+}
+#editor::-webkit-scrollbar { width: 6px; height: 6px; }
+#editor::-webkit-scrollbar-track { background: transparent; }
+#editor::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* error underlines on listing */
+.err-line { background: rgba(255,95,95,0.05); }
+
+/* ── OUTPUT PANE ── */
+.output-pane {
+  grid-row: 2;
+  grid-column: 3;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.tabs-row {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+  padding: 0 8px;
+  height: 38px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.tab-btn {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text3);
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.tab-btn:hover { color: var(--text2); background: var(--bg3); }
+.tab-btn.active {
+  color: var(--text);
+  background: var(--bg4);
+  border: 1px solid var(--border2);
+}
+.tab-count {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 9px;
+  background: var(--bg);
+  color: var(--text3);
+  min-width: 16px;
+  text-align: center;
+}
+.tab-count.has { background: var(--accent-bg); color: var(--accent); }
+.tab-count.err { background: var(--red-bg); color: var(--red); }
+
+.output-body {
+  flex: 1;
+  overflow: auto;
+  padding: 0;
+}
+.output-body::-webkit-scrollbar { width: 6px; }
+.output-body::-webkit-scrollbar-track { background: transparent; }
+.output-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* Tab panels */
+.panel { display: none; height: 100%; padding: 16px; }
+.panel.active { display: block; }
+
+/* Tokens */
+.token-grid {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  gap: 0;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.token-row { display: contents; }
+.token-row:hover .tc { background: var(--bg3); }
+.tc {
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+.tc:first-child { padding-left: 0; color: var(--text3); }
+.tc:last-child  { color: var(--text2); }
+.tt-RESERVED { color: var(--blue); }
+.tt-ID       { color: var(--accent); }
+.tt-INTEGER  { color: var(--amber); }
+.tt-STRING   { color: var(--teal); }
+.tt-ASSIGNOP,.tt-RELOP,.tt-ADDOP,.tt-MULOP { color: var(--text); }
+.tt-DELIMITER{ color: var(--text3); }
+.tt-EOF      { color: var(--text3); font-style: italic; }
+
+/* TAC */
+.tac-block {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.8;
+  color: var(--text);
+}
+.tac-label {
+  color: var(--accent);
+  font-weight: 500;
+  margin-top: 12px;
+  margin-bottom: 2px;
+  display: block;
+}
+.tac-instr { color: var(--text2); padding-left: 4px; display: block; }
+.tac-op    { color: var(--blue); }
+.tac-temp  { color: var(--amber); }
+.tac-goto  { color: var(--teal); }
+
+/* ASM */
+.asm-block {
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.8;
+  white-space: pre;
+  color: var(--text2);
+}
+.asm-section  { color: var(--accent); font-weight: 500; }
+.asm-label    { color: var(--teal); }
+.asm-instr    { color: var(--text); }
+.asm-reg      { color: var(--amber); }
+.asm-comment  { color: var(--text3); font-style: italic; }
+
+/* Listing */
+.listing-line {
+  display: flex;
+  align-items: flex-start;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.7;
+  min-height: 22px;
+}
+.listing-line:hover .l-code { background: rgba(255,255,255,0.02); }
+.l-num {
+  min-width: 36px;
+  text-align: right;
+  padding-right: 12px;
+  color: var(--text3);
+  user-select: none;
+  flex-shrink: 0;
+}
+.l-code {
+  flex: 1;
+  padding: 0 8px;
+  color: var(--text2);
+  white-space: pre;
+  transition: background 0.1s;
+}
+.listing-line.has-err .l-num  { color: var(--red); }
+.listing-line.has-err .l-code { background: var(--red-bg); color: var(--text); }
+.err-msg {
+  display: flex;
+  gap: 8px;
+  padding: 3px 8px 3px 48px;
+  background: var(--red-bg);
+  border-left: 2px solid var(--red);
+  margin-bottom: 1px;
+}
+.err-phase {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--red);
+  background: rgba(255,95,95,0.15);
+  padding: 1px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+  align-self: center;
+}
+.err-text {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--red);
+  flex: 1;
+}
+
+/* Empty / idle state */
+.idle-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 12px;
+  color: var(--text3);
+}
+.idle-icon {
+  font-size: 32px;
+  opacity: 0.3;
+}
+.idle-text {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Status bar */
+.statusbar {
+  height: 26px;
+  border-top: 1px solid var(--border);
+  background: var(--bg2);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 16px;
+  flex-shrink: 0;
+}
+.status-item {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 0.06em;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.status-item.success { color: var(--accent); }
+.status-item.fail    { color: var(--red); }
+.status-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Loading spinner */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner {
+  width: 12px; height: 12px;
+  border: 2px solid rgba(10,10,11,0.3);
+  border-top-color: #0a0a0b;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+/* Scan line effect on bg */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(255,255,255,0.008) 2px,
+    rgba(255,255,255,0.008) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Fade in animation */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeUp 0.25s ease forwards; }
+
+/* Scrollbar sync */
+.editor-scroll-sync { overflow: hidden; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="logo">
+      <div class="logo-dot"></div>
+      ZYN
+      <span class="logo-sub">DSL Studio</span>
+    </div>
+
+    <div class="topbar-center">
+      <div class="phase-pip" id="pip-lexer">
+        <div class="pip-dot"></div>Lexer
+      </div>
+      <div class="phase-pip" id="pip-parser">
+        <div class="pip-dot"></div>Parser
+      </div>
+      <div class="phase-pip" id="pip-icg">
+        <div class="pip-dot"></div>ICG
+      </div>
+      <div class="phase-pip" id="pip-codegen">
+        <div class="pip-dot"></div>CodeGen
+      </div>
+    </div>
+
+    <button class="compile-btn" id="compileBtn" onclick="compile()">
+      <span class="btn-icon">▶</span>
+      Run Compiler
+    </button>
+  </header>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">Examples</div>
+    <div class="examples-list" id="examplesList"></div>
+    <div class="sidebar-stats">
+      <div class="stat-row">
+        <span class="stat-label">TOKENS</span>
+        <span class="stat-value" id="stat-tokens">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">TAC LINES</span>
+        <span class="stat-value" id="stat-tac">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">ERRORS</span>
+        <span class="stat-value" id="stat-errors">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">STATUS</span>
+        <span class="stat-value" id="stat-status">—</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- EDITOR -->
+  <div class="editor-pane">
+    <div class="pane-header">
+      <div class="pane-title">
+        <div class="dot"></div>
+        program.pas
+      </div>
+      <span class="pane-badge badge-lang">Pascal-DSL</span>
+    </div>
+    <div class="editor-wrap">
+      <div class="line-nums" id="lineNums">1</div>
+      <textarea id="editor" spellcheck="false" autocorrect="off" autocapitalize="off"
+        placeholder="! Write your program here..."></textarea>
+    </div>
+    <div class="statusbar">
+      <div class="status-item" id="cursorPos">LN 1, COL 1</div>
+      <div class="status-item" id="lineCount">0 lines</div>
+    </div>
+  </div>
+
+  <!-- OUTPUT -->
+  <div class="output-pane">
+    <div class="tabs-row">
+      <button class="tab-btn active" onclick="showTab('listing')" id="tab-listing">
+        Listing <span class="tab-count" id="cnt-listing">—</span>
+      </button>
+      <button class="tab-btn" onclick="showTab('tokens')" id="tab-tokens">
+        Tokens <span class="tab-count" id="cnt-tokens">—</span>
+      </button>
+      <button class="tab-btn" onclick="showTab('tac')" id="tab-tac">
+        TAC <span class="tab-count" id="cnt-tac">—</span>
+      </button>
+      <button class="tab-btn" onclick="showTab('asm')" id="tab-asm">
+        Assembly
+      </button>
+    </div>
+    <div class="output-body">
+      <div class="panel active" id="panel-listing">
+        <div class="idle-state">
+          <div class="idle-icon">◈</div>
+          <div class="idle-text">Awaiting compilation</div>
+        </div>
+      </div>
+      <div class="panel" id="panel-tokens">
+        <div class="idle-state">
+          <div class="idle-icon">◈</div>
+          <div class="idle-text">Awaiting compilation</div>
+        </div>
+      </div>
+      <div class="panel" id="panel-tac">
+        <div class="idle-state">
+          <div class="idle-icon">◈</div>
+          <div class="idle-text">Awaiting compilation</div>
+        </div>
+      </div>
+      <div class="panel" id="panel-asm">
+        <div class="idle-state">
+          <div class="idle-icon">◈</div>
+          <div class="idle-text">Awaiting compilation</div>
+        </div>
+      </div>
+    </div>
+    <div class="statusbar">
+      <div class="status-item" id="compileStatus">Not compiled</div>
+      <div class="status-item" id="compileTime"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── EXAMPLES ──────────────────────────────────────────────
+const examples = [
+  {
+    name: 'Factorial',
+    desc: 'Recursive function',
+    tag: 'functions',
+    code: `! Factorial using recursion
+program factorial;
+
+var
+    n      : integer;
+    result : integer;
+
+function computeFact(x : integer) : integer;
+var
+    f : integer;
+begin
+    if x <= 1 then
+        f := 1
+    else
+        f := x * computeFact(x - 1);
+    computeFact := f
+end;
+
+begin
+    write('Enter a number: ');
+    read(n);
+    result := computeFact(n);
+    write('Factorial = ');
+    write(result)
+end.`
+  },
+  {
+    name: 'Sum of N',
+    desc: 'While loop example',
+    tag: 'loops',
+    code: `! Sum from 1 to N
+program sumN;
+
+var
+    i   : integer;
+    n   : integer;
+    sum : integer;
+
+begin
+    read(n);
+    i   := 1;
+    sum := 0;
+    while i <= n do
+    begin
+        sum := sum + i;
+        i   := i + 1
+    end;
+    write('Sum = ');
+    write(sum)
+end.`
+  },
+  {
+    name: 'Max of Two',
+    desc: 'If/else branching',
+    tag: 'conditionals',
+    code: `! Find maximum of two numbers
+program findMax;
+
+var
+    a : integer;
+    b : integer;
+
+begin
+    read(a);
+    read(b);
+    if a > b then
+        write(a)
+    else
+        write(b)
+end.`
+  },
+  {
+    name: 'Array Demo',
+    desc: 'Array read/write',
+    tag: 'arrays',
+    code: `! Store and print array values
+program arrayDemo;
+
+var
+    nums : array[5] of integer;
+    i    : integer;
+
+begin
+    nums[0] := 10;
+    nums[1] := 20;
+    nums[2] := 30;
+    nums[3] := 40;
+    nums[4] := 50;
+    i := 0;
+    while i <= 4 do
+    begin
+        write(nums[i]);
+        i := i + 1
+    end
+end.`
+  },
+  {
+    name: 'Even / Odd',
+    desc: 'Arithmetic check',
+    tag: 'conditionals',
+    code: `! Check even or odd
+program evenOdd;
+
+var
+    n : integer;
+
+begin
+    read(n);
+    if (n / 2) * 2 = n then
+        write('Even')
+    else
+        write('Odd')
+end.`
+  },
+  {
+    name: 'Error Demo',
+    desc: 'Shows error reporting',
+    tag: 'error',
+    code: `! Program with intentional errors
+program errorTest;
+
+var
+    x : integer;
+    y : integer;
+
+begin
+    x := 10;
+    y := ;
+    write(x + y)
+end.`
+  }
+];
+
+let activeExample = 0;
+
+function buildSidebar() {
+  const list = document.getElementById('examplesList');
+  list.innerHTML = examples.map((e, i) => `
+    <div class="example-item ${i===0?'active':''}" onclick="loadExample(${i})">
+      <div class="example-name">${e.name}</div>
+      <div class="example-desc">${e.desc}</div>
+      <span class="example-tag ${e.tag==='error'?'err-tag':''}">${e.tag}</span>
+    </div>
+  `).join('');
+}
+
+function loadExample(i) {
+  activeExample = i;
+  document.querySelectorAll('.example-item').forEach((el,j) =>
+    el.classList.toggle('active', j===i));
+  document.getElementById('editor').value = examples[i].code;
+  updateLineNums();
+  resetOutput();
+}
+
+// ── EDITOR ────────────────────────────────────────────────
+const editor = document.getElementById('editor');
+const lineNums = document.getElementById('lineNums');
+
+function updateLineNums() {
+  const lines = editor.value.split('\n').length;
+  lineNums.innerHTML = Array.from({length: lines}, (_,i) => i+1).join('<br>');
+  document.getElementById('lineCount').textContent = lines + ' lines';
+}
+
+editor.addEventListener('input', updateLineNums);
+editor.addEventListener('scroll', () => {
+  lineNums.scrollTop = editor.scrollTop;
+});
+editor.addEventListener('keydown', e => {
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const s = editor.selectionStart;
+    editor.value = editor.value.substring(0,s) + '    ' + editor.value.substring(editor.selectionEnd);
+    editor.selectionStart = editor.selectionEnd = s + 4;
+    updateLineNums();
+  }
+  if ((e.metaKey||e.ctrlKey) && e.key === 'Enter') compile();
+});
+editor.addEventListener('click', updateCursor);
+editor.addEventListener('keyup', updateCursor);
+
+function updateCursor() {
+  const val = editor.value.substring(0, editor.selectionStart);
+  const lines = val.split('\n');
+  document.getElementById('cursorPos').textContent =
+    `LN ${lines.length}, COL ${lines[lines.length-1].length + 1}`;
+}
+
+// ── TABS ──────────────────────────────────────────────────
+function showTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+// ── COMPILE ───────────────────────────────────────────────
+async function compile() {
+  const btn = document.getElementById('compileBtn');
+  btn.classList.add('loading');
+  btn.innerHTML = '<div class="spinner"></div> Compiling…';
+
+  resetPips();
+  const t0 = performance.now();
+
+  try {
+    const res = await fetch('/compile', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({source: editor.value})
+    });
+    const data = await res.json();
+    const ms = (performance.now() - t0).toFixed(1);
+    renderResult(data, ms);
+  } catch(err) {
+    document.getElementById('compileStatus').textContent = 'Server error: ' + err.message;
+    document.getElementById('compileStatus').className = 'status-item fail';
+  }
+
+  btn.classList.remove('loading');
+  btn.innerHTML = '<span class="btn-icon">▶</span> Run Compiler';
+}
+
+function resetOutput() {
+  ['listing','tokens','tac','asm'].forEach(p => {
+    document.getElementById('panel-' + p).innerHTML = `
+      <div class="idle-state">
+        <div class="idle-icon">◈</div>
+        <div class="idle-text">Awaiting compilation</div>
+      </div>`;
+  });
+  ['tokens','tac','listing'].forEach(id => {
+    const el = document.getElementById('cnt-' + id);
+    if(el) { el.textContent = '—'; el.className = 'tab-count'; }
+  });
+  document.getElementById('stat-tokens').textContent = '—';
+  document.getElementById('stat-tac').textContent = '—';
+  document.getElementById('stat-errors').textContent = '—';
+  document.getElementById('stat-status').textContent = '—';
+  document.getElementById('compileStatus').textContent = 'Not compiled';
+  document.getElementById('compileStatus').className = 'status-item';
+  document.getElementById('compileTime').textContent = '';
+  resetPips();
+}
+
+function resetPips() {
+  ['lexer','parser','icg','codegen'].forEach(p => {
+    const pip = document.getElementById('pip-' + p);
+    pip.className = 'phase-pip';
+  });
+}
+
+function renderResult(data, ms) {
+  // Phase pips
+  const phaseMap = {lexer:'lexer', parser:'parser', icg:'icg', codegen:'codegen'};
+  for(const [key, pid] of Object.entries(phaseMap)) {
+    const phase = data.phases[key];
+    const pip = document.getElementById('pip-' + pid);
+    if(phase.done) {
+      pip.className = phase.error_count > 0 ? 'phase-pip error' : 'phase-pip done';
+    }
+  }
+
+  // Stats
+  document.getElementById('stat-tokens').textContent = data.tokens.length;
+  document.getElementById('stat-tac').textContent = data.tac.length;
+  const errCount = data.errors.length;
+  const errEl = document.getElementById('stat-errors');
+  errEl.textContent = errCount;
+  errEl.className = 'stat-value ' + (errCount > 0 ? 'red' : 'accent');
+
+  const statusEl = document.getElementById('stat-status');
+  statusEl.textContent = data.success ? 'SUCCESS' : 'FAILED';
+  statusEl.className = 'stat-value ' + (data.success ? 'accent' : 'red');
+
+  // Tab counts
+  const cntT = document.getElementById('cnt-tokens');
+  cntT.textContent = data.tokens.length;
+  cntT.className = 'tab-count' + (data.tokens.length ? ' has' : '');
+
+  const cntTac = document.getElementById('cnt-tac');
+  cntTac.textContent = data.tac.length;
+  cntTac.className = 'tab-count' + (data.tac.length ? ' has' : '');
+
+  const cntL = document.getElementById('cnt-listing');
+  cntL.textContent = errCount > 0 ? errCount + ' err' : 'OK';
+  cntL.className = 'tab-count' + (errCount > 0 ? ' err' : ' has');
+
+  // Status bar
+  const csEl = document.getElementById('compileStatus');
+  csEl.textContent = data.success ? '✓ Compilation successful' : `✗ ${errCount} error(s) found`;
+  csEl.className = 'status-item ' + (data.success ? 'success' : 'fail');
+  document.getElementById('compileTime').textContent = ms + ' ms';
+
+  // Render panels
+  renderListing(data);
+  renderTokens(data);
+  renderTAC(data);
+  renderASM(data);
+}
+
+function renderListing(data) {
+  const panel = document.getElementById('panel-listing');
+  if(!data.listing.length) { panel.innerHTML = '<div class="idle-state"><div class="idle-text">No listing generated</div></div>'; return; }
+
+  let html = '<div class="fade-in" style="padding:8px 0;">';
+  for(const line of data.listing) {
+    if(line.lineno === 0) continue;
+    const hasErr = line.errors && line.errors.length > 0;
+    html += `<div class="listing-line ${hasErr?'has-err':''}">
+      <span class="l-num">${line.lineno}</span>
+      <span class="l-code">${escHtml(line.text)}</span>
+    </div>`;
+    if(hasErr) {
+      for(const e of line.errors) {
+        html += `<div class="err-msg">
+          <span class="err-phase">${e.phase}</span>
+          <span class="err-text">${escHtml(e.message)}</span>
+        </div>`;
+      }
+    }
+  }
+  html += '</div>';
+  panel.innerHTML = html;
+}
+
+function renderTokens(data) {
+  const panel = document.getElementById('panel-tokens');
+  if(!data.tokens.length) { panel.innerHTML = '<div class="idle-state"><div class="idle-text">No tokens</div></div>'; return; }
+
+  let html = '<div class="token-grid fade-in">';
+  for(const tok of data.tokens) {
+    html += `<div class="token-row">
+      <div class="tc" style="color:var(--text3)">${tok.line}</div>
+      <div class="tc tt-${tok.type}">${tok.type}</div>
+      <div class="tc">${escHtml(String(tok.value))}</div>
+    </div>`;
+  }
+  html += '</div>';
+  panel.innerHTML = html;
+}
+
+function renderTAC(data) {
+  const panel = document.getElementById('panel-tac');
+  if(!data.tac.length) {
+    panel.innerHTML = '<div class="idle-state"><div class="idle-text">No TAC — errors present</div></div>';
+    return;
+  }
+  let html = '<div class="tac-block fade-in" style="padding:4px 0;">';
+  for(const line of data.tac) {
+    const trimmed = line.trim();
+    if(!trimmed) { html += '<span style="display:block;height:6px"></span>'; continue; }
+    if(trimmed.endsWith(':')) {
+      html += `<span class="tac-label">${escHtml(trimmed)}</span>`;
+    } else {
+      // highlight keywords
+      let highlighted = escHtml(line)
+        .replace(/\b(GOTO|IFFALSE|IF|CALL|PARAM|RETURN|READ|WRITE|ARRAY_LOAD|ARRAY_STORE)\b/g,
+          '<span class="tac-op">$1</span>')
+        .replace(/\b(t\d+)\b/g, '<span class="tac-temp">$1</span>')
+        .replace(/\b(L\d+)\b/g, '<span class="tac-goto">$1</span>');
+      html += `<span class="tac-instr">${highlighted}</span>`;
+    }
+  }
+  html += '</div>';
+  panel.innerHTML = html;
+}
+
+function renderASM(data) {
+  const panel = document.getElementById('panel-asm');
+  if(!data.asm) {
+    panel.innerHTML = '<div class="idle-state"><div class="idle-text">No assembly — errors present</div></div>';
+    return;
+  }
+  let html = '<div class="asm-block fade-in" style="padding:4px 0;">';
+  for(const line of data.asm.split('\n')) {
+    let out = escHtml(line);
+    if(out.startsWith('SECTION') || out.startsWith('; ====')) {
+      out = `<span class="asm-section">${out}</span>`;
+    } else if(/^\w[\w_]*:$/.test(out.trim()) || /^[A-Za-z_]\w*:/.test(out.trim())) {
+      out = `<span class="asm-label">${out}</span>`;
+    } else if(/^\s*;/.test(out)) {
+      out = `<span class="asm-comment">${out}</span>`;
+    } else if(/^\s+(MOV|ADD|SUB|IMUL|IDIV|PUSH|POP|CALL|RET|JMP|JE|JNE|JL|JG|JLE|JGE|CMP|CWD|NEG|AND|OR|XOR|GLOBAL)\b/.test(out)) {
+      out = out.replace(/\b(MOV|ADD|SUB|IMUL|IDIV|PUSH|POP|CALL|RET|JMP|JE|JNE|JL|JG|JLE|JGE|CMP|CWD|NEG|AND|OR|XOR|GLOBAL)\b/,
+        '<span class="asm-instr">$1</span>');
+      out = out.replace(/\b(AX|BX|CX|DX|SP|BP|SI|DI)\b/g, '<span class="asm-reg">$1</span>');
+    }
+    html += out + '\n';
+  }
+  html += '</div>';
+  panel.innerHTML = html;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── INIT ──────────────────────────────────────────────────
+buildSidebar();
+loadExample(0);
+</script>
+</body>
+</html>
